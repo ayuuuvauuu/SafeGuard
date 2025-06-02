@@ -1,0 +1,161 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 0%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 3%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 346.8 77.2% 49.8%;
+    --primary-foreground: 355.7 100% 97.3%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 12 6.5% 15.1%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 85.7% 97.3%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 346.8 77.2% 49.8%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 0 0% 0%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 3%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 346.8 77.2% 49.8%;
+    --primary-foreground: 355.7 100% 97.3%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 12 6.5% 15.1%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 85.7% 97.3%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 346.8 77.2% 49.8%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Marker Animations */
+.emergency-marker-pulse {
+  animation: pulse-red 1.5s infinite;
+  z-index: 1002 !important;
+}
+
+.alert-marker-pulse {
+  animation: pulse-red 2s infinite;
+  z-index: 1001 !important;
+}
+
+.ambulance-marker-pulse {
+  animation: pulse-blue 1s infinite;
+  z-index: 1001 !important;
+}
+
+.police-marker-pulse {
+  animation: pulse-blue 2s infinite;
+  z-index: 1001 !important;
+}
+
+.protector-marker-pulse {
+  animation: pulse-green 2.5s infinite;
+  z-index: 1001 !important;
+}
+
+@keyframes pulse-red {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 0 rgba(239, 68, 68, 0.7));
+  }
+  50% {
+    filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.7));
+  }
+}
+
+@keyframes pulse-blue {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 0 rgba(59, 130, 246, 0.7));
+  }
+  50% {
+    filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.7));
+  }
+}
+
+@keyframes pulse-green {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 0 rgba(34, 197, 94, 0.7));
+  }
+  50% {
+    filter: drop-shadow(0 0 10px rgba(34, 197, 94, 0.7));
+  }
+}
+
+/* Leaflet Styles */
+.leaflet-marker-icon {
+  z-index: 1000 !important;
+}
+.leaflet-popup {
+  z-index: 1001 !important;
+}
+.leaflet-container {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 300px !important;
+  z-index: 1 !important;
+  position: relative !important;
+}
+.leaflet-control-attribution {
+  display: none !important;
+}
+.leaflet-popup-content-wrapper {
+  border-radius: 8px;
+  padding: 0;
+}
+.leaflet-popup-content {
+  margin: 0;
+  padding: 8px;
+}
+.leaflet-container .leaflet-marker-pane img,
+.leaflet-container .leaflet-shadow-pane img {
+  max-width: none !important;
+}
+
+.map-container {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+}
+
+.map-controls {
+  position: relative;
+  z-index: 2;
+}
+
+.modal-container {
+  position: relative;
+  z-index: 50;
+}
