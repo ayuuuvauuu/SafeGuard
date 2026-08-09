@@ -15,7 +15,7 @@ const users = [
     email: "female@example.com",
     password: "password",
     name: "Jane Doe",
-    role: "To be Protected" as const,
+    role: "Protected" as const,
   },
   {
     uid: "user2",
@@ -60,7 +60,7 @@ export async function signUp(email: string, password: string, name: string, gend
       }
 
       // Create new user
-      const role = gender === "Male" ? "Protector" : "Protected"
+      const role: "Protector" | "Protected" = gender === "Male" ? "Protector" : "Protected"
       const newUser = {
         uid: `user${users.length + 1}`,
         email,

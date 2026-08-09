@@ -19,15 +19,15 @@ interface AlertCardProps {
 export function AlertCard({ alert }: AlertCardProps) {
   const handleRespond = () => {
     // Just show an alert instead of redirecting
-    alert("Response sent to " + alert.name)
+    globalThis.alert("Response sent to " + alert.name)
   }
 
   const handleCall = () => {
-    alert("Calling " + alert.name)
+    globalThis.alert("Calling " + alert.name)
   }
 
   const handleNavigate = () => {
-    alert("Navigating to " + alert.name + "'s location")
+    globalThis.alert("Navigating to " + alert.name + "'s location")
   }
 
   return (

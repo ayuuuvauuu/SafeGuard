@@ -183,7 +183,7 @@ export default function TravelStatus() {
                     <div className="font-medium">Contact Check-in</div>
                     <div className="text-muted-foreground">14:40:15</div>
                   </div>
-                  <div className="text-muted-foreground">Mom: "Are you okay?"</div>
+                  <div className="text-muted-foreground">Mom: &quot;Are you okay?&quot;</div>
                 </div>
               </div>
             </div>

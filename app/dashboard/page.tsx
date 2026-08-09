@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Bell, Shield, Phone, Menu, UserIcon as Female, UserIcon as Male, Heart } from "lucide-react"
 import { useSearchParams, useRouter } from "next/navigation"
-import ShakeDetector from "@/shakedector"
+import ShakeDetector from "@/components/ShakeDetector"
 
 // Dynamically import components that use browser APIs with SSR disabled
 const LiveMap = dynamic(() => import("@/components/live-map").then((mod) => mod.LiveMap), {

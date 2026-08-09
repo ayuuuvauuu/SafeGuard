@@ -1,81 +1,97 @@
-// components/ShakeDetector.tsx
-'use client';
+"use client"
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 
 export default function ShakeDetector() {
-  const router = useRouter();
+  const router = useRouter()
+  const [showMotionNotice, setShowMotionNotice] = useState(false)
 
   useEffect(() => {
-    let shakeCount = 0;
-    let lastShakeTime = 0;
-    const shakeThreshold = 15;
-    const shakeTimeout = 1000;
-
-    let lastX: number | null = null;
-    let lastY: number | null = null;
-    let lastZ: number | null = null;
+    let triggered = false
+    const spikeTimes: number[] = []
+    const threshold = 15
+    const minSpikeGap = 100
+    const windowMs = 1500
 
     function handleMotion(event: DeviceMotionEvent) {
-      const acc = event.accelerationIncludingGravity;
-      if (!acc) return;
-
-      const { x, y, z } = acc;
-
-      if (lastX !== null && lastY !== null && lastZ !== null) {
-        const deltaX = Math.abs(x! - lastX);
-        const deltaY = Math.abs(y! - lastY);
-        const deltaZ = Math.abs(z! - lastZ);
-
-        const totalDelta = deltaX + deltaY + deltaZ;
-        const currentTime = Date.now();
-
-        if (totalDelta > shakeThreshold && currentTime - lastShakeTime > shakeTimeout) {
-          lastShakeTime = currentTime;
-          shakeCount++;
-
-          if (shakeCount >= 3) {
-            shakeCount = 0;
-            router.push('/app/emergency-response'); // ✅ Correct Next.js route
-          }
-        }
+      let acc = event.acceleration
+      if (!acc || acc.x === null || acc.y === null || acc.z === null) {
+        acc = event.accelerationIncludingGravity
+        if (!acc || acc.x === null || acc.y === null || acc.z === null) return
       }
 
-      lastX = x;
-      lastY = y;
-      lastZ = z;
+      const totalDelta = Math.abs(acc.x) + Math.abs(acc.y) + Math.abs(acc.z)
+      const now = performance.now()
+
+      if (totalDelta < threshold) return
+
+      const lastSpike = spikeTimes[spikeTimes.length - 1] ?? 0
+      if (now - lastSpike < minSpikeGap) return
+
+      spikeTimes.push(now)
+      while (spikeTimes.length > 0 && spikeTimes[0] < now - windowMs) {
+        spikeTimes.shift()
+      }
+
+      if (spikeTimes.length >= 3) {
+        trigger()
+      }
+    }
+
+    function trigger() {
+      if (triggered) return
+      triggered = true
+      router.push("/emergency-response")
     }
 
     async function initMotionPermission() {
-      // For iOS: Request permission if needed
-      // @ts-ignore
-      if (typeof DeviceMotionEvent?.requestPermission === 'function') {
-        try {
-          // @ts-ignore
-          const response = await DeviceMotionEvent.requestPermission();
-          if (response !== 'granted') {
-            alert('Motion permission denied.');
-            return;
-          }
-        } catch (e) {
-          console.error('Motion permission error', e);
+      try {
+        const DeviceMotionEventWithPermission = DeviceMotionEvent as typeof DeviceMotionEvent & {
+          requestPermission?: () => Promise<"granted" | "denied">
         }
+        if (
+          typeof DeviceMotionEvent !== "undefined" &&
+          typeof DeviceMotionEventWithPermission.requestPermission === "function"
+        ) {
+          const response = await DeviceMotionEventWithPermission.requestPermission()
+          if (response !== "granted") {
+            setShowMotionNotice(true)
+            return
+          }
+        }
+      } catch (e) {
+        setShowMotionNotice(true)
+        return
       }
 
-      if ('ondevicemotion' in window) {
-        window.addEventListener('devicemotion', handleMotion, false);
-      } else {
-        alert("This device does not support motion detection.");
+      if ("ondevicemotion" in window) {
+        window.addEventListener("devicemotion", handleMotion)
       }
     }
 
-    initMotionPermission();
+    initMotionPermission()
 
     return () => {
-      window.removeEventListener('devicemotion', handleMotion);
-    };
-  }, [router]);
+      window.removeEventListener("devicemotion", handleMotion)
+    }
+  }, [router])
 
-  return null;
+  if (!showMotionNotice) return null
+
+  return (
+    <div className="fixed bottom-4 left-1/2 z-50 w-[90%] max-w-sm -translate-x-1/2 rounded-lg bg-slate-900 p-4 text-sm text-white shadow-lg">
+      <button
+        aria-label="Dismiss notification"
+        onClick={() => setShowMotionNotice(false)}
+        className="absolute right-2 top-2 text-slate-400 hover:text-white"
+      >
+        ×
+      </button>
+      <p className="font-medium">Shake-to-SOS is off</p>
+      <p className="mt-1 text-slate-300">
+        Motion permission was denied, so shaking this phone will not trigger an emergency. Use the SOS button instead.
+      </p>
+    </div>
+  )
 }

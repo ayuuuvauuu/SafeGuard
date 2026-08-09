@@ -137,7 +137,7 @@ export default function Login() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-4 bg-background">
-      {showCredits && <CreditDialog />}
+      {showCredits && <CreditDialog open={showCredits} onOpenChange={setShowCredits} />}
       <Card className="w-full max-w-md space-y-4">
         <CardHeader>
           <Link

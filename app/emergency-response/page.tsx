@@ -21,7 +21,7 @@ import {
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import dynamic from "next/dynamic"
-import ShakeDetector from "@/shakedector"
+import ShakeDetector from "@/components/ShakeDetector"
 
 // Dynamically import components that use browser APIs with SSR disabled
 const LiveMap = dynamic(() => import("@/components/live-map").then((mod) => mod.LiveMap), {
