@@ -8,6 +8,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Bell, Shield, Phone, Menu, UserIcon as Female, UserIcon as Male, Heart } from "lucide-react"
 import { useSearchParams, useRouter } from "next/navigation"
 import ShakeDetector from "@/components/ShakeDetector"
+import { OfflineBanner } from "@/components/offline-banner"
+import { startEmergencyAlert } from "@/lib/sos"
+import { toast } from "sonner"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 // Dynamically import components that use browser APIs with SSR disabled
 const LiveMap = dynamic(() => import("@/components/live-map").then((mod) => mod.LiveMap), {
@@ -63,6 +76,7 @@ export default function Dashboard() {
   const [showFakeExitModal, setShowFakeExitModal] = useState(false)
   const [showContactsModal, setShowContactsModal] = useState(false)
   const [showMedicalEmergencyModal, setShowMedicalEmergencyModal] = useState(false)
+  const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false)
   const [darkMode, setDarkMode] = useState(true)
   const [medicalEmergencyActive, setMedicalEmergencyActive] = useState(false)
   const [isBrowser, setIsBrowser] = useState(false)
@@ -92,26 +106,20 @@ export default function Dashboard() {
   useEffect(() => {
     if (!isBrowser || !medicalEmergencyActive) return
 
-    try {
-      const audio = new Audio("/alert-sound.mp3")
-      audio.play().catch((e) => console.log("Audio play failed:", e))
+    const stopAlert = startEmergencyAlert({
+      title: "🚨 MEDICAL EMERGENCY - SafeGuard",
+    })
 
-      if (navigator.vibrate) {
-        navigator.vibrate([300, 100, 300])
-      }
-
-      document.title = "🚨 MEDICAL EMERGENCY - SafeGuard"
-
-      return () => {
-        document.title = "SafeGuard"
-      }
-    } catch (error) {
-      console.error("Browser API error:", error)
-    }
+    return stopAlert
   }, [medicalEmergencyActive, isBrowser])
 
   const switchToMale = () => {
     if (!isBrowser || medicalEmergencyActive) return // Prevent switching during medical emergency
+
+    if ((localStorage.getItem("userRole") || "Protected") !== "Protector") {
+      toast.info("Protector dashboard requires a Protector account role.")
+      return
+    }
 
     try {
       localStorage.setItem("userType", "male")
@@ -136,11 +144,12 @@ export default function Dashboard() {
 
   return (
     <main className={`min-h-screen bg-black ${medicalEmergencyActive ? "border-l-4 border-r-4 border-red-600" : ""}`}>
+      <OfflineBanner />
       <ShakeDetector />
       <div className="container py-4">
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={() => setShowContactsModal(true)} className="rounded-full">
+            <Button variant="ghost" size="icon" aria-label="Open emergency contacts" onClick={() => setShowContactsModal(true)} className="rounded-full">
               <Menu className="h-5 w-5" />
             </Button>
             <h1 className="text-2xl font-bold">
@@ -181,7 +190,7 @@ export default function Dashboard() {
                 className={`h-auto py-6 flex flex-col gap-2 ${
                   medicalEmergencyActive ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-700"
                 } text-white`}
-                onClick={medicalEmergencyActive ? deactivateMedicalEmergency : () => setShowMedicalEmergencyModal(true)}
+                onClick={medicalEmergencyActive ? () => setShowDeactivateConfirm(true) : () => setShowMedicalEmergencyModal(true)}
               >
                 <Heart className="h-6 w-6 mb-1" />
                 <span className="text-base">{medicalEmergencyActive ? "Deactivate Medical" : "Medical Emergency"}</span>
@@ -225,10 +234,8 @@ export default function Dashboard() {
               <CardContent className="h-[300px] relative">
                 {isBrowser && (
                   <LiveMap
-                    showProtectors={true}
-                    showRoutes={false}
                     isMedicalEmergency={medicalEmergencyActive}
-                    onDeactivateMedical={deactivateMedicalEmergency}
+                    onDeactivateMedical={() => setShowDeactivateConfirm(true)}
                   />
                 )}
               </CardContent>
@@ -285,6 +292,29 @@ export default function Dashboard() {
           />
         </>
       )}
+
+      <AlertDialog open={showDeactivateConfirm} onOpenChange={setShowDeactivateConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>End medical emergency?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will stop notifying emergency services and end the medical emergency session.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep Emergency Active</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-green-600 hover:bg-green-700"
+              onClick={() => {
+                setShowDeactivateConfirm(false)
+                deactivateMedicalEmergency()
+              }}
+            >
+              End Medical Emergency
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </main>
   )
 }

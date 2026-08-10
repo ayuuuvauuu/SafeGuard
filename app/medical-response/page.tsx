@@ -4,10 +4,14 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { AlertCircle, Clock, Heart, Phone, Shield, Users, X, ChevronDown, ChevronUp } from "lucide-react"
+import { AlertCircle, Clock, Heart, Phone, Users, X, ChevronDown, ChevronUp } from "lucide-react"
 import Link from "next/link"
 import dynamic from "next/dynamic"
 import { Footer } from "@/components/footer"
+import { ShieldEmergencyButton } from "@/components/shield-emergency-button"
+import { startEmergencyAlert } from "@/lib/sos"
+import { getEmergencyContacts } from "@/lib/contacts"
+import { toast } from "sonner"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
@@ -25,6 +29,7 @@ export default function MedicalResponse() {
   const [elapsedTime, setElapsedTime] = useState(0)
   const [isTimelineExpanded, setIsTimelineExpanded] = useState(false)
   const [isBrowser, setIsBrowser] = useState(false)
+  const [contactsCount, setContactsCount] = useState(0)
 
   // Add state variables for medical information
   const [bloodType, setBloodType] = useState("")
@@ -37,6 +42,7 @@ export default function MedicalResponse() {
   // Set browser state
   useEffect(() => {
     setIsBrowser(true)
+    setContactsCount(getEmergencyContacts().length)
 
     // Load medical info from localStorage if available
     if (typeof window !== "undefined") {
@@ -66,28 +72,16 @@ export default function MedicalResponse() {
     return () => clearInterval(timer)
   }, [])
 
-  // Play alert sound and vibrate - only on client side
+  // Play alert sound, vibrate, and update title - only on client side
   useEffect(() => {
     // Only run in browser environment
     if (!isBrowser) return
 
-    try {
-      const audio = new Audio("/alert-sound.mp3")
-      audio.play().catch((e) => console.log("Audio play failed:", e))
+    const stopAlert = startEmergencyAlert({
+      title: "🚑 MEDICAL EMERGENCY - SafeGuard",
+    })
 
-      if (navigator.vibrate) {
-        navigator.vibrate([300, 100, 300])
-      }
-    } catch (error) {
-      console.error("Error with browser APIs:", error)
-    }
-
-    // Update document title
-    document.title = "🚑 MEDICAL EMERGENCY - SafeGuard"
-
-    return () => {
-      document.title = "SafeGuard"
-    }
+    return stopAlert
   }, [isBrowser])
 
   // Format elapsed time
@@ -110,10 +104,10 @@ export default function MedicalResponse() {
           contactPhone,
         }
         localStorage.setItem("medicalInfo", JSON.stringify(medicalInfo))
-        alert("Medical information updated successfully!")
+        toast.success("Medical information updated successfully!")
       } catch (error) {
         console.error("Error saving medical info:", error)
-        alert("Failed to save medical information.")
+        toast.error("Failed to save medical information.")
       }
     }
   }
@@ -131,7 +125,7 @@ export default function MedicalResponse() {
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="rounded-full bg-white/20 hover:bg-white/30" asChild>
-              <Link href="/dashboard">
+              <Link href="/dashboard" aria-label="Close medical response">
                 <X className="h-5 w-5" />
               </Link>
             </Button>
@@ -160,7 +154,7 @@ export default function MedicalResponse() {
               <AlertCircle className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               <div>
                 <div className="text-xs font-medium text-blue-800 dark:text-blue-300">Medical Services</div>
-                <div className="text-xs text-blue-600 dark:text-blue-400">ETA: 5 mins</div>
+                <div className="text-xs text-blue-600 dark:text-blue-400">Demo · ETA: 5 mins</div>
               </div>
             </CardContent>
           </Card>
@@ -170,7 +164,7 @@ export default function MedicalResponse() {
               <Phone className="h-5 w-5 text-green-600 dark:text-green-400" />
               <div>
                 <div className="text-xs font-medium text-green-800 dark:text-green-300">Contacts Alerted</div>
-                <div className="text-xs text-green-600 dark:text-green-400">3 received</div>
+                <div className="text-xs text-green-600 dark:text-green-400">{contactsCount} alerted (demo)</div>
               </div>
             </CardContent>
           </Card>
@@ -180,7 +174,7 @@ export default function MedicalResponse() {
               <Users className="h-5 w-5 text-amber-600 dark:text-amber-400" />
               <div>
                 <div className="text-xs font-medium text-amber-800 dark:text-amber-300">Nearby Users</div>
-                <div className="text-xs text-amber-600 dark:text-amber-400">5 within 2km</div>
+                <div className="text-xs text-amber-600 dark:text-amber-400">Demo · 5 within 2km</div>
               </div>
             </CardContent>
           </Card>
@@ -308,13 +302,10 @@ export default function MedicalResponse() {
         </Card>
 
         {/* Action Buttons */}
-        <div className="grid grid-cols-2 gap-2">
-          <Button variant="destructive" className="w-full" asChild>
+        <div className="grid grid-cols-1 gap-2">
+          <ShieldEmergencyButton />
+          <Button variant="ghost" className="w-full text-red-400" asChild>
             <Link href="/dashboard">End Emergency</Link>
-          </Button>
-          <Button variant="outline" className="w-full border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white">
-            <Shield className="mr-2 h-4 w-4" />
-            Call Emergency Services
           </Button>
         </div>
       </div>

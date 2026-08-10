@@ -52,7 +52,7 @@ export default function TravelStatus() {
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="rounded-full bg-white/20 hover:bg-white/30" asChild>
-              <Link href="/dashboard">
+              <Link href="/dashboard" aria-label="Close travel status">
                 <X className="h-5 w-5" />
               </Link>
             </Button>

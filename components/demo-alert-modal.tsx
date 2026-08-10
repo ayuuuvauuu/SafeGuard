@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -95,13 +96,13 @@ export function DemoAlertModal({ open, onOpenChange }: DemoAlertModalProps) {
 
   const handleCall = () => {
     stopVibration()
-    alert("Calling emergency contact...")
+    toast("Calling emergency contact...")
     onOpenChange(false)
   }
 
   const handleNavigate = () => {
     stopVibration()
-    alert("Navigating to emergency location...")
+    toast("Navigating to emergency location...")
     onOpenChange(false)
   }
 

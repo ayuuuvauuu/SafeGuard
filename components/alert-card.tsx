@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Phone, Navigation, AlertCircle } from "lucide-react"
+import { toast } from "sonner"
 
 interface AlertCardProps {
   alert: {
@@ -18,16 +19,16 @@ interface AlertCardProps {
 
 export function AlertCard({ alert }: AlertCardProps) {
   const handleRespond = () => {
-    // Just show an alert instead of redirecting
-    globalThis.alert("Response sent to " + alert.name)
+    // Just show a toast instead of redirecting
+    toast.success("Response sent to " + alert.name)
   }
 
   const handleCall = () => {
-    globalThis.alert("Calling " + alert.name)
+    toast("Calling " + alert.name)
   }
 
   const handleNavigate = () => {
-    globalThis.alert("Navigating to " + alert.name + "'s location")
+    toast("Navigating to " + alert.name + "'s location")
   }
 
   return (

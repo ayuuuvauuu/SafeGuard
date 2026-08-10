@@ -121,6 +121,7 @@ export function EmergencyContactsModal({ open, onOpenChange }: EmergencyContacts
                   variant="ghost"
                   size="icon"
                   className="absolute top-2 right-2 h-8 w-8 text-destructive"
+                  aria-label={`Remove contact ${contact.name || index + 1}`}
                   onClick={() => removeContact(contact.id)}
                 >
                   <Trash2 className="h-4 w-4" />

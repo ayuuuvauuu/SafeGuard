@@ -13,20 +13,26 @@ Scope and roadmap are still being shaped — the user will add more details late
 - `npm run dev` / `npm run build` / `npm start`
 - `npm run lint` (via `next lint`, config in `.eslintrc.json`)
 - Deploy: `npx firebase deploy --only hosting` (Firebase Hosting with Next.js framework backend, region `asia-east1`, default project `women-safety-app-24af0`)
-- Verification: run `npx tsc --noEmit` yourself — `next.config.mjs` sets `eslint.ignoreDuringBuilds` and `typescript.ignoreBuildErrors` to false, so `npm run build` fails on type/lint errors; `node_modules` is installed in this checkout
+- Verification: run `npx tsc --noEmit` AND `npm run lint` yourself — both must pass before any PR. `next.config.mjs` sets `eslint.ignoreDuringBuilds` and `typescript.ignoreBuildErrors` to false, so `npm run build` fails on type/lint errors; `node_modules` is installed in this checkout
 - No test framework or test script; verify by building/typechecking
+
+## Firebase setup
+
+- Firebase config is read from build-time env vars: `NEXT_PUBLIC_FIREBASE_API_KEY`, `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`, `NEXT_PUBLIC_FIREBASE_PROJECT_ID`, `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`, `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`, `NEXT_PUBLIC_FIREBASE_APP_ID`. **No credentials are committed**; `lib/firebase.ts` never embeds a key.
+- Without env vars the app still builds and runs, but auth surfaces show a loud "Firebase is not configured" notice and sign-in/registration are disabled until the vars are set.
+- Deploy commands must set the env vars (or the deployed app will show the not-configured notice).
 
 ## Setup quirks
 
 - Path alias `@/*` maps to repo root (no `src/` dir): `@/components/...`, `@/lib/...`
 - `node_modules` is installed in this checkout; `pnpm-lock.yaml` exists but is empty, and `.idx/dev.nix` uses `npm`. `npm install` works; pnpm may complain about the React 19 + Next 14 peer-dep mismatch in `package.json`
-- Firebase config (`apiKey`, etc.) is hardcoded in `lib/firebase.ts`; no `.env` files
+- `firebase` and `@firebase/app` are regular `dependencies` (auth runs at runtime, not build time)
 
 ## Architecture
 
-- **Two parallel auth systems coexist** — don't assume one backend:
-  - `lib/auth.ts`: mock in-memory auth (hardcoded `female@example.com` / `male@example.com`, password `password`); used by `app/register/page.tsx`
-  - `lib/firebase.ts`: real Firebase (Google sign-in popup, Firestore); used by `app/login/page.tsx`
-- **Canonical components vs dead duplicates**: only `components/live-map.tsx` is actually imported (by `app/dashboard`, `emergency-response`, `medical-response`, `suspect-status`, `travel-status`, `protector-dashboard`). It renders a live chain `live-map → map-view → map-component → leaflet-map` — the `protector-map*`/`protector-leaflet-map` variants and root-level `shakedector.tsx` / `shake.js` were deleted. Grep for imports before editing a component — most changes belong in `live-map.tsx` or `components/ShakeDetector.tsx`.
+- **Single auth system**: Firebase only. `lib/firebase.ts` provides `signUpWithEmail`, `signInWithEmail`, `signInWithGoogle`, `storeUserInfo` (writes `users/{uid}` profile with `name`, `role`, `gender`, `createdAt`), `observeAuth`/`onAuthStateChanged` for session persistence, and `firebaseConfigured`. The old `lib/auth.ts` mock was deleted.
+- Roles are stored on the profile (`Protected` / `Protector`), chosen explicitly at registration (`app/register/page.tsx`), never derived from gender. `app/user-selection/page.tsx` gates the Protector dashboard on the stored role.
+- **Canonical components vs dead duplicates**: only `components/live-map.tsx` is actually imported (by `app/dashboard`, `emergency-response`, `medical-response`, `suspect-status`, `travel-status`, `protector-dashboard`). It renders a live chain `live-map → map-view → map-component → leaflet-map`. Typed map models live in `components/map-types.ts` (`MapLocation`, `MapAlert`, `ResponderUnit`, `MapViewType`, `DEFAULT_LOCATION`). No duplicate map/shake components remain; `components/ShakeDetector.tsx` is the only detector.
+- PWA: `public/manifest.json` (scope `/`), icons generated from `logo.png`, and `public/sw.js` registered by `components/service-worker-register.ts` in production. `components/offline-banner.tsx` warns when offline.
 - Leaflet maps are usually `dynamic(() => import(...), { ssr: false })` to avoid SSR issues
-- `app/globals.css` (root `styles/globals.css` is stale) + shadcn/ui components in `components/ui/`
+- `app/globals.css` is the only global stylesheet + shadcn/ui components in `components/ui/`

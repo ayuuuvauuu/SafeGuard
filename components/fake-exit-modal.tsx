@@ -79,8 +79,9 @@ export function FakeExitModal({ open, onOpenChange }: FakeExitModalProps) {
               <h3 className="font-medium">Fake Exit (Recommended)</h3>
             </div>
             <p className="text-sm text-muted-foreground">
-              The app will appear to close, but will continue running in the background. Location tracking, recording,
-              and alerts will remain active.
+              Shows a blank &quot;closing&quot; screen to disguise what you are doing. This is a disguise only: browsers do not
+              let web apps keep tracking, recording, or sending alerts in the background while the page is hidden. If
+              you need real help, use the SOS button or call emergency services.
             </p>
             <Button className="w-full mt-2 bg-pink-500 hover:bg-pink-600" onClick={handleFakeExit}>
               Fake Exit
@@ -93,8 +94,8 @@ export function FakeExitModal({ open, onOpenChange }: FakeExitModalProps) {
               <h3 className="font-medium">Real Exit</h3>
             </div>
             <p className="text-sm text-muted-foreground">
-              This will completely end the emergency mode and stop all tracking and recording. Only use this when you
-              are safe.
+              This ends the emergency session and returns you to the dashboard. It does not stop anything running in the
+              background — there is nothing running in the background.
             </p>
             <Button
               variant="outline"

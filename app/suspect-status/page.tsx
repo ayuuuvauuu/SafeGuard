@@ -8,6 +8,10 @@ import { AlertCircle, MapPin, ArrowLeft, Camera, Mic, X } from "lucide-react"
 import Link from "next/link"
 import { LiveMap } from "@/components/live-map"
 import { Footer } from "@/components/footer"
+import { ShieldEmergencyButton } from "@/components/shield-emergency-button"
+import { getEmergencyContacts } from "@/lib/contacts"
+import type { EmergencyContact } from "@/lib/contacts"
+import { toast } from "sonner"
 
 // Default location (Jamshedpur, India)
 const defaultLocation = { lat: 22.77, lng: 86.24 }
@@ -17,10 +21,12 @@ export default function SuspectStatus() {
   const [capturedPhotos, setCapturedPhotos] = useState<number>(0) // Number of photos captured
   const [photoEvidence, setPhotoEvidence] = useState<string | null>(null)
   const [isBrowser, setIsBrowser] = useState(false)
+  const [contacts, setContacts] = useState<EmergencyContact[]>([])
 
   // Set browser state and load photo evidence
   useEffect(() => {
     setIsBrowser(true)
+    setContacts(getEmergencyContacts())
 
     // Load photo from localStorage if available
     if (typeof window !== "undefined") {
@@ -55,7 +61,7 @@ export default function SuspectStatus() {
   // Handle capture photo
   const handleCapturePhoto = () => {
     setCapturedPhotos(capturedPhotos + 1)
-    alert("Photo captured successfully!")
+    toast.success("Photo captured successfully!")
   }
 
   return (
@@ -73,7 +79,7 @@ export default function SuspectStatus() {
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="rounded-full bg-white/20 hover:bg-white/30" asChild>
-              <Link href="/dashboard">
+              <Link href="/dashboard" aria-label="Close suspect status">
                 <X className="h-5 w-5" />
               </Link>
             </Button>
@@ -85,7 +91,7 @@ export default function SuspectStatus() {
         <Card className="overflow-hidden">
           <CardContent className="p-0">
             <div className="relative">
-              {isBrowser && <LiveMap location={defaultLocation} showProtectors={false} />}
+              {isBrowser && <LiveMap location={defaultLocation} />}
               <div className="absolute bottom-2 right-2">
                 <Badge variant="secondary" className="bg-background/80 backdrop-blur-sm">
                   Live Location Sharing
@@ -142,24 +148,18 @@ export default function SuspectStatus() {
             <div>
               <h3 className="text-sm font-medium mb-2">Contacts Notified</h3>
               <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span>Mom</span>
-                  <Badge variant="outline" className="text-green-500">
-                    Received
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span>Dad</span>
-                  <Badge variant="outline" className="text-green-500">
-                    Received
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span>Sister</span>
-                  <Badge variant="outline" className="text-muted">
-                    Pending
-                  </Badge>
-                </div>
+                {contacts.length > 0 ? (
+                  contacts.map((contact) => (
+                    <div key={contact.id} className="flex items-center justify-between text-sm">
+                      <span>{contact.name || contact.phone || "Unnamed contact"}</span>
+                      <Badge variant="outline" className="text-green-500">
+                        Received (demo)
+                      </Badge>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-xs text-muted-foreground">No emergency contacts saved yet.</p>
+                )}
               </div>
             </div>
 
@@ -245,13 +245,16 @@ export default function SuspectStatus() {
         </Card>
 
         {/* Action Buttons */}
-        <div className="grid grid-cols-2 gap-2">
-          <Button variant="destructive" className="w-full" asChild>
-            <Link href="/dashboard">End Alert</Link>
-          </Button>
-          <Button variant="outline" className="w-full" onClick={handleCapturePhoto}>
-            Capture Photo
-          </Button>
+        <div className="grid grid-cols-1 gap-2">
+          <ShieldEmergencyButton />
+          <div className="grid grid-cols-2 gap-2">
+            <Button variant="destructive" className="w-full" asChild>
+              <Link href="/dashboard">End Alert</Link>
+            </Button>
+            <Button variant="outline" className="w-full" onClick={handleCapturePhoto}>
+              Capture Photo
+            </Button>
+          </div>
         </div>
       </div>
 

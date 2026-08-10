@@ -1,11 +1,16 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
+
+// Module-level guard: only one detector instance may attach a listener at a time,
+// so a double-mount can never create two `devicemotion` listeners that double-trigger SOS.
+let listenerAttached = false
 
 export default function ShakeDetector() {
   const router = useRouter()
   const [showMotionNotice, setShowMotionNotice] = useState(false)
+  const handlerRef = useRef<((event: DeviceMotionEvent) => void) | null>(null)
 
   useEffect(() => {
     let triggered = false
@@ -13,6 +18,12 @@ export default function ShakeDetector() {
     const threshold = 15
     const minSpikeGap = 100
     const windowMs = 1500
+
+    function trigger() {
+      if (triggered) return
+      triggered = true
+      router.push("/emergency-response")
+    }
 
     function handleMotion(event: DeviceMotionEvent) {
       let acc = event.acceleration
@@ -39,41 +50,59 @@ export default function ShakeDetector() {
       }
     }
 
-    function trigger() {
-      if (triggered) return
-      triggered = true
-      router.push("/emergency-response")
+    handlerRef.current = handleMotion
+
+    function attachListener() {
+      if (listenerAttached) return
+      if (!("ondevicemotion" in window)) return
+      listenerAttached = true
+      window.addEventListener("devicemotion", handleMotion)
     }
 
-    async function initMotionPermission() {
-      try {
-        const DeviceMotionEventWithPermission = DeviceMotionEvent as typeof DeviceMotionEvent & {
-          requestPermission?: () => Promise<"granted" | "denied">
-        }
-        if (
-          typeof DeviceMotionEvent !== "undefined" &&
-          typeof DeviceMotionEventWithPermission.requestPermission === "function"
-        ) {
-          const response = await DeviceMotionEventWithPermission.requestPermission()
-          if (response !== "granted") {
-            setShowMotionNotice(true)
-            return
-          }
-        }
-      } catch (e) {
-        setShowMotionNotice(true)
-        return
-      }
+    let onGesture: (() => void) | null = null
 
-      if ("ondevicemotion" in window) {
-        window.addEventListener("devicemotion", handleMotion)
+    function requestPermissionFromGesture() {
+      const DeviceMotionEventWithPermission = DeviceMotionEvent as typeof DeviceMotionEvent & {
+        requestPermission?: () => Promise<"granted" | "denied">
+      }
+      if (
+        typeof DeviceMotionEvent !== "undefined" &&
+        typeof DeviceMotionEventWithPermission.requestPermission === "function"
+      ) {
+        // iOS: must be triggered from a user gesture
+        onGesture = () => {
+          window.removeEventListener("pointerdown", onGesture!)
+          window.removeEventListener("touchstart", onGesture!)
+          DeviceMotionEventWithPermission.requestPermission!()
+            .then((response) => {
+              if (response === "granted") {
+                attachListener()
+              } else {
+                setShowMotionNotice(true)
+              }
+            })
+            .catch(() => {
+              setShowMotionNotice(true)
+            })
+        }
+        window.addEventListener("pointerdown", onGesture)
+        window.addEventListener("touchstart", onGesture)
+      } else {
+        attachListener()
       }
     }
 
-    initMotionPermission()
+    requestPermissionFromGesture()
 
     return () => {
-      window.removeEventListener("devicemotion", handleMotion)
+      if (onGesture) {
+        window.removeEventListener("pointerdown", onGesture)
+        window.removeEventListener("touchstart", onGesture)
+      }
+      if (listenerAttached) {
+        listenerAttached = false
+        window.removeEventListener("devicemotion", handlerRef.current!)
+      }
     }
   }, [router])
 

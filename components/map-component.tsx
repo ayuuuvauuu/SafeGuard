@@ -1,19 +1,16 @@
 "use client"
 
 import { LeafletMap } from "./leaflet-map"
-import type { MapViewType } from "./map-view"
+import { MapAlert, MapLocation, MapViewType, ResponderUnit } from "./map-types"
 
 interface MapComponentProps {
-  location: {
-    lat: number
-    lng: number
-  }
+  location: MapLocation
   viewType?: MapViewType
   isProtector?: boolean
-  alerts?: any[]
-  ambulances?: any[]
-  policeUnits?: any[]
-  protectors?: any[]
+  alerts?: MapAlert[]
+  ambulances?: ResponderUnit[]
+  policeUnits?: ResponderUnit[]
+  protectors?: ResponderUnit[]
   isMedicalEmergency?: boolean
 }
 

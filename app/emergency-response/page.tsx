@@ -22,6 +22,18 @@ import {
 import { useRouter } from "next/navigation"
 import dynamic from "next/dynamic"
 import ShakeDetector from "@/components/ShakeDetector"
+import { startEmergencyAlert } from "@/lib/sos"
+import { getEmergencyContacts } from "@/lib/contacts"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 // Dynamically import components that use browser APIs with SSR disabled
 const LiveMap = dynamic(() => import("@/components/live-map").then((mod) => mod.LiveMap), {
@@ -88,6 +100,8 @@ export default function EmergencyResponse() {
   const [isVideoActive, setIsVideoActive] = useState(true)
   const [isAudioActive, setIsAudioActive] = useState(true)
   const [showFakeExitModal, setShowFakeExitModal] = useState(false)
+  const [showEndConfirm, setShowEndConfirm] = useState(false)
+  const [contactsCount, setContactsCount] = useState(0)
   const [isTimelineExpanded, setIsTimelineExpanded] = useState(false)
   const [isBrowser, setIsBrowser] = useState(false)
   const router = useRouter()
@@ -95,6 +109,7 @@ export default function EmergencyResponse() {
   // Set browser state
   useEffect(() => {
     setIsBrowser(true)
+    setContactsCount(getEmergencyContacts().length)
   }, [])
 
   // Simulate elapsed time
@@ -106,28 +121,16 @@ export default function EmergencyResponse() {
     return () => clearInterval(timer)
   }, [])
 
-  // Play alert sound and vibrate - only on client side
+  // Play alert sound, vibrate, and update title - only on client side
   useEffect(() => {
     // Only run in browser environment
     if (!isBrowser) return
 
-    try {
-      const audio = new Audio("/alert-sound.mp3")
-      audio.play().catch((e) => console.log("Audio play failed:", e))
+    const stopAlert = startEmergencyAlert({
+      title: "🚨 EMERGENCY ACTIVE - SafeGuard",
+    })
 
-      if (navigator.vibrate) {
-        navigator.vibrate([300, 100, 300])
-      }
-    } catch (error) {
-      console.error("Error with browser APIs:", error)
-    }
-
-    // Update document title only on client side
-    document.title = "🚨 EMERGENCY ACTIVE - SafeGuard"
-
-    return () => {
-      document.title = "SafeGuard"
-    }
+    return stopAlert
   }, [isBrowser])
 
   // Format elapsed time
@@ -153,7 +156,8 @@ export default function EmergencyResponse() {
   }
 
   // Handle emergency end
-  const endEmergency = () => {
+  const confirmEndEmergency = () => {
+    setShowEndConfirm(false)
     router.push("/dashboard")
   }
 
@@ -174,6 +178,7 @@ export default function EmergencyResponse() {
               variant="ghost"
               size="icon"
               className="rounded-full bg-white/20 hover:bg-white/30"
+              aria-label="Open fake exit"
               onClick={() => setShowFakeExitModal(true)}
             >
               <X className="h-5 w-5" />
@@ -191,9 +196,6 @@ export default function EmergencyResponse() {
                 {isBrowser && (
                   <LiveMap
                     location={{ lat: 22.77, lng: 86.24 }}
-                    showProtectors={true}
-                    showPolice={true}
-                    showRoutes={true}
                     viewType="emergency"
                   />
                 )}
@@ -217,6 +219,7 @@ export default function EmergencyResponse() {
                       size="icon"
                       variant="secondary"
                       className="h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm"
+                      aria-label="Flip camera"
                       onClick={toggleCamera}
                     >
                       <RotateCcw className="h-4 w-4" />
@@ -225,6 +228,7 @@ export default function EmergencyResponse() {
                       size="icon"
                       variant="secondary"
                       className="h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm"
+                      aria-label="Toggle camera"
                       onClick={toggleVideo}
                     >
                       {isVideoActive ? <Camera className="h-4 w-4" /> : <CameraOff className="h-4 w-4" />}
@@ -233,13 +237,14 @@ export default function EmergencyResponse() {
                       size="icon"
                       variant="secondary"
                       className="h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm"
+                      aria-label="Toggle audio"
                       onClick={toggleAudio}
                     >
                       {isAudioActive ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
                     </Button>
                   </div>
                   <Badge variant="secondary" className="bg-background/80 backdrop-blur-sm">
-                    {isVideoActive ? "Live Streaming" : "Video Paused"}
+                    {isVideoActive ? "Camera Preview" : "Camera Off"}
                   </Badge>
                 </div>
               </div>
@@ -254,7 +259,7 @@ export default function EmergencyResponse() {
               <Shield className="h-5 w-5 text-green-600 dark:text-green-400" />
               <div>
                 <div className="text-xs font-medium text-green-800 dark:text-green-300">Police Notified</div>
-                <div className="text-xs text-green-600 dark:text-green-400">ETA: 8 mins</div>
+                <div className="text-xs text-green-600 dark:text-green-400">Demo · ETA: 8 mins</div>
               </div>
             </CardContent>
           </Card>
@@ -264,7 +269,7 @@ export default function EmergencyResponse() {
               <Phone className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               <div>
                 <div className="text-xs font-medium text-blue-800 dark:text-blue-300">Contacts Alerted</div>
-                <div className="text-xs text-blue-600 dark:text-blue-400">3 received</div>
+                <div className="text-xs text-blue-600 dark:text-blue-400">{contactsCount} alerted (demo)</div>
               </div>
             </CardContent>
           </Card>
@@ -274,7 +279,7 @@ export default function EmergencyResponse() {
               <Users className="h-5 w-5 text-amber-600 dark:text-amber-400" />
               <div>
                 <div className="text-xs font-medium text-amber-800 dark:text-amber-300">Nearby Users</div>
-                <div className="text-xs text-amber-600 dark:text-amber-400">7 within 2km</div>
+                <div className="text-xs text-amber-600 dark:text-amber-400">Demo · 7 within 2km</div>
               </div>
             </CardContent>
           </Card>
@@ -283,8 +288,8 @@ export default function EmergencyResponse() {
             <CardContent className="p-3 flex items-center gap-2">
               <Clock className="h-5 w-5 text-purple-600 dark:text-purple-400" />
               <div>
-                <div className="text-xs font-medium text-purple-800 dark:text-purple-300">Evidence</div>
-                <div className="text-xs text-purple-600 dark:text-purple-400">Recording: {formatTime(elapsedTime)}</div>
+                <div className="text-xs font-medium text-purple-800 dark:text-purple-300">Video Preview</div>
+                <div className="text-xs text-purple-600 dark:text-purple-400">Preview time: {formatTime(elapsedTime)}</div>
               </div>
             </CardContent>
           </Card>
@@ -299,6 +304,7 @@ export default function EmergencyResponse() {
                 variant="ghost"
                 size="sm"
                 className="h-8 w-8 p-0"
+                aria-label="Toggle emergency timeline"
                 onClick={() => setIsTimelineExpanded(!isTimelineExpanded)}
               >
                 {isTimelineExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -318,7 +324,7 @@ export default function EmergencyResponse() {
 
         {/* Emergency Controls */}
         <div className="grid grid-cols-2 gap-2">
-          <Button variant="destructive" className="w-full" onClick={endEmergency}>
+          <Button variant="destructive" className="w-full" onClick={() => setShowEndConfirm(true)}>
             End Emergency
           </Button>
           <Button
@@ -332,6 +338,23 @@ export default function EmergencyResponse() {
       </div>
 
       {isBrowser && showFakeExitModal && <FakeExitModal open={showFakeExitModal} onOpenChange={setShowFakeExitModal} />}
+
+      <AlertDialog open={showEndConfirm} onOpenChange={setShowEndConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>End emergency?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will stop the emergency session, close the camera preview, and return you to the dashboard.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Stay in Emergency</AlertDialogCancel>
+            <AlertDialogAction className="bg-red-600 hover:bg-red-700" onClick={confirmEndEmergency}>
+              End Emergency
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </main>
   )
 }

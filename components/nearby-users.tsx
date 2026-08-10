@@ -23,10 +23,10 @@ export function NearbyUsers({ enableMessaging = false, hideStatus = false }: Nea
     setIsBrowser(true)
     // Initialize messages state
     setMessages({
-      RS: [],
-      AK: [],
-      VP: [],
-      SM: [],
+      PS: [],
+      AV: [],
+      MN: [],
+      KR: [],
     })
   }, [])
 
@@ -34,35 +34,35 @@ export function NearbyUsers({ enableMessaging = false, hideStatus = false }: Nea
   const users = [
     {
       id: 1,
-      name: "Baba Ram Rahim",
+      name: "Priya Sharma",
       distance: "0.3km",
       status: "Responding",
       avatar: "/placeholder-user.jpg",
-      initials: "RS",
+      initials: "PS",
     },
     {
       id: 2,
-      name: "Salman Khan",
+      name: "Ananya Verma",
       distance: "0.7km",
       status: "Notified",
       avatar: "/placeholder-user.jpg",
-      initials: "AK",
+      initials: "AV",
     },
     {
       id: 3,
-      name: "Batman",
+      name: "Meera Nair",
       distance: "1.2km",
       status: "Responding",
       avatar: "/placeholder-user.jpg",
-      initials: "VP",
+      initials: "MN",
     },
     {
       id: 4,
-      name: "Shaktimaan",
+      name: "Kavita Rao",
       distance: "1.5km",
       status: "Notified",
       avatar: "/placeholder-user.jpg",
-      initials: "SM",
+      initials: "KR",
     },
   ]
 
@@ -106,6 +106,7 @@ export function NearbyUsers({ enableMessaging = false, hideStatus = false }: Nea
 
   return (
     <div className="space-y-2">
+      <p className="text-xs text-muted-foreground">Demo — no real users nearby. Users and messages are simulated.</p>
       {users.map((user) => (
         <div key={user.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50">
           <div className="flex items-center gap-2">

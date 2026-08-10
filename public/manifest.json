@@ -2,27 +2,24 @@
   "name": "SafeGuard - Safety App",
   "short_name": "SafeGuard",
   "description": "Your personal safety companion with real-time location sharing and emergency alerts",
-  "start_url": "/login",
+  "start_url": "/",
   "id": "safeguard-app",
   "display": "standalone",
   "background_color": "#1f1f1f",
   "theme_color": "#000000",
   "orientation": "portrait",
-  "scope": "/login",
+  "scope": "/",
   "lang": "en",
   "dir": "ltr",
   "prefer_related_applications": false,
   "categories": ["safety", "security", "utilities"],
-  "screenshots": [
-    {
-      "src": "/screenshot1.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "platform": "wide",
-      "label": "SafeGuard Dashboard"
-    }
-  ],
   "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
     {
       "src": "/icon-512x512.png",
       "sizes": "512x512",
@@ -38,8 +35,8 @@
       "url": "/dashboard?action=sos",
       "icons": [
         {
-          "src": "/icon-512x512.png",
-          "sizes": "512x512",
+          "src": "/icon-192x192.png",
+          "sizes": "192x192",
           "type": "image/png",
           "purpose": "any maskable"
         }
@@ -49,11 +46,11 @@
       "name": "Medical Emergency",
       "short_name": "Medical",
       "description": "Trigger medical emergency alert",
-      "url": "/protector-dashboard?action=medical",
+      "url": "/medical-response",
       "icons": [
         {
-          "src": "/icon-512x512.png",
-          "sizes": "512x512",
+          "src": "/icon-192x192.png",
+          "sizes": "192x192",
           "type": "image/png",
           "purpose": "any maskable"
         }

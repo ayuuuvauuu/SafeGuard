@@ -96,13 +96,27 @@ export function MedicalEmergencyModal({
     onOpenChange(false)
   }
 
-  const themeColor = isMaleInterface ? "blue" : "pink"
+  const theme = isMaleInterface
+    ? {
+        title: "text-blue-500",
+        icon: "text-blue-500",
+        solid: "bg-blue-600 hover:bg-blue-700 text-white",
+        active: "data-[state=active]:bg-blue-600 data-[state=active]:text-white",
+        checked: "data-[state=checked]:bg-blue-600",
+      }
+    : {
+        title: "text-pink-500",
+        icon: "text-pink-500",
+        solid: "bg-pink-600 hover:bg-pink-700 text-white",
+        active: "data-[state=active]:bg-pink-600 data-[state=active]:text-white",
+        checked: "data-[state=checked]:bg-pink-600",
+      }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] bg-black text-white border-gray-800">
         <DialogHeader>
-          <DialogTitle className={`text-${themeColor}-500 flex items-center gap-2`}>
+          <DialogTitle className={`${theme.title} flex items-center gap-2`}>
             {showMedicalDetailsOnly ? (
               <>
                 <Stethoscope className="h-5 w-5" />
@@ -203,7 +217,7 @@ export function MedicalEmergencyModal({
             <DialogFooter>
               <Button
                 type="button"
-                className={`bg-${themeColor}-600 hover:bg-${themeColor}-700 text-white`}
+                className={`${theme.solid}`}
                 onClick={() => onOpenChange(false)}
               >
                 Close
@@ -215,13 +229,13 @@ export function MedicalEmergencyModal({
             <TabsList className="grid w-full grid-cols-2 bg-gray-900">
               <TabsTrigger
                 value="emergency"
-                className={`data-[state=active]:bg-${themeColor}-600 data-[state=active]:text-white`}
+                className={`${theme.active}`}
               >
                 Emergency
               </TabsTrigger>
               <TabsTrigger
                 value="medical"
-                className={`data-[state=active]:bg-${themeColor}-600 data-[state=active]:text-white`}
+                className={`${theme.active}`}
               >
                 Medical Info
               </TabsTrigger>
@@ -230,7 +244,7 @@ export function MedicalEmergencyModal({
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <AlertCircle className={`h-5 w-5 text-${themeColor}-500`} />
+                    <AlertCircle className={`h-5 w-5 ${theme.icon}`} />
                     <Label htmlFor="share-location" className="text-white">
                       Share Location
                     </Label>
@@ -239,12 +253,12 @@ export function MedicalEmergencyModal({
                     id="share-location"
                     checked={shareLocation}
                     onCheckedChange={setShareLocation}
-                    className={`data-[state=checked]:bg-${themeColor}-600`}
+                    className={`${theme.checked}`}
                   />
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Stethoscope className={`h-5 w-5 text-${themeColor}-500`} />
+                    <Stethoscope className={`h-5 w-5 ${theme.icon}`} />
                     <Label htmlFor="share-medical" className="text-white">
                       Share Medical Info
                     </Label>
@@ -253,12 +267,12 @@ export function MedicalEmergencyModal({
                     id="share-medical"
                     checked={shareMedicalInfo}
                     onCheckedChange={setShareMedicalInfo}
-                    className={`data-[state=checked]:bg-${themeColor}-600`}
+                    className={`${theme.checked}`}
                   />
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <User className={`h-5 w-5 text-${themeColor}-500`} />
+                    <User className={`h-5 w-5 ${theme.icon}`} />
                     <Label htmlFor="notify-contacts" className="text-white">
                       Notify Emergency Contacts
                     </Label>
@@ -267,12 +281,12 @@ export function MedicalEmergencyModal({
                     id="notify-contacts"
                     checked={notifyContacts}
                     onCheckedChange={setNotifyContacts}
-                    className={`data-[state=checked]:bg-${themeColor}-600`}
+                    className={`${theme.checked}`}
                   />
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Phone className={`h-5 w-5 text-${themeColor}-500`} />
+                    <Phone className={`h-5 w-5 ${theme.icon}`} />
                     <Label htmlFor="call-emergency" className="text-white">
                       Call Emergency Services (911)
                     </Label>
@@ -281,7 +295,7 @@ export function MedicalEmergencyModal({
                     id="call-emergency"
                     checked={callEmergencyServices}
                     onCheckedChange={setCallEmergencyServices}
-                    className={`data-[state=checked]:bg-${themeColor}-600`}
+                    className={`${theme.checked}`}
                   />
                 </div>
                 <div>

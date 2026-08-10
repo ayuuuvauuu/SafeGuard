@@ -1,31 +1,40 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { X } from "lucide-react"
 import dynamic from "next/dynamic"
+import { DEFAULT_LOCATION, MapLocation, MapAlert, MapViewType, ResponderUnit } from "./map-types"
 
 // Dynamically import MapComponent with SSR disabled
 const MapComponent = dynamic(() => import("./map-component").then((mod) => mod.MapComponent), { ssr: false })
 
-export type MapViewType = "female" | "male" | "emergency"
+export type { MapViewType }
 
 interface MapViewProps {
+  location?: MapLocation
   viewType?: MapViewType
+  alerts?: MapAlert[]
   isMedicalEmergency?: boolean
   onDeactivateMedical?: () => void
 }
 
-export function MapView({ viewType = "female", isMedicalEmergency = false, onDeactivateMedical }: MapViewProps) {
-  const [location, setLocation] = useState({ lat: 22.7744, lng: 84.2444 }) // Default: ghs
-  const [alerts, setAlerts] = useState<any[]>([])
-  const [ambulances, setAmbulances] = useState<any[]>([])
-  const [policeUnits, setPoliceUnits] = useState<any[]>([])
-  const [protectors, setProtectors] = useState<any[]>([])
+export function MapView({
+  location: externalLocation,
+  viewType = "female",
+  alerts: externalAlerts = [],
+  isMedicalEmergency = false,
+  onDeactivateMedical,
+}: MapViewProps) {
+  const defaultLocationRef = useRef<MapLocation>(externalLocation ?? DEFAULT_LOCATION)
+  const [location, setLocation] = useState<MapLocation>(defaultLocationRef.current)
+  const [ambulances, setAmbulances] = useState<ResponderUnit[]>([])
+  const [policeUnits, setPoliceUnits] = useState<ResponderUnit[]>([])
+  const [protectors, setProtectors] = useState<ResponderUnit[]>([])
   const watchIdRef = useRef<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [locationLoaded, setLocationLoaded] = useState(false)
-  const initialLocationRef = useRef<{ lat: number; lng: number } | null>(null)
+  const initialLocationRef = useRef<MapLocation | null>(null)
   const [isBrowser, setIsBrowser] = useState(false)
 
   // Set browser state
@@ -33,9 +42,17 @@ export function MapView({ viewType = "female", isMedicalEmergency = false, onDea
     setIsBrowser(true)
   }, [])
 
-  // Real-time location tracking
+  // Honor an externally-provided location (pages like travel/suspect/medical pass one)
   useEffect(() => {
-    if (!isBrowser) return
+    if (externalLocation) {
+      setLocation(externalLocation)
+      initialLocationRef.current = externalLocation
+    }
+  }, [externalLocation?.lat, externalLocation?.lng])
+
+  // Real-time location tracking (skipped when a page provides the location)
+  useEffect(() => {
+    if (!isBrowser || externalLocation) return
 
     // Check if geolocation is supported
     if (!navigator.geolocation) {
@@ -113,37 +130,24 @@ export function MapView({ viewType = "female", isMedicalEmergency = false, onDea
         }
       }
     }
-  }, [isBrowser])
+  }, [isBrowser, externalLocation])
 
   // Simulate location if geolocation fails
   const simulateLocation = () => {
-    // Use a more realistic default location (Jamshedpur, India)
-    const newLocation = {
-      lat: 22.8046,
-      lng: 86.2029,
-    }
-    setLocation(newLocation)
-    initialLocationRef.current = newLocation
+    setLocation(DEFAULT_LOCATION)
+    initialLocationRef.current = DEFAULT_LOCATION
   }
 
-  // Generate alerts for male dashboard
-  useEffect(() => {
-    if (!isBrowser) return
-
-    if (viewType === "male" && !isMedicalEmergency) {
-      // Use current location for alerts
-      const baseLocation = location
-      const generatedAlerts = generateAlerts(baseLocation)
-      setAlerts(generatedAlerts)
-    } else if (viewType === "emergency" || isMedicalEmergency) {
-      // For emergency view, generate emergency alerts
-      const baseLocation = location
-      const emergencyAlerts = generateEmergencyAlerts(baseLocation)
-      setAlerts(emergencyAlerts)
-    } else {
-      setAlerts([])
-    }
-  }, [location, viewType, isMedicalEmergency, isBrowser])
+  // Prefer externally-provided alerts (e.g. protector dashboard) over generated ones.
+  // Derived with useMemo rather than an effect + state: the default `[]` for
+  // `externalAlerts` is a fresh array identity every render, so depending on it in an
+  // effect would re-run and re-set state forever ("Maximum update depth exceeded").
+  const renderedAlerts = useMemo<MapAlert[]>(() => {
+    if (externalAlerts.length > 0) return externalAlerts
+    if (viewType === "male" && !isMedicalEmergency) return generateAlerts(location)
+    if (viewType === "emergency" || isMedicalEmergency) return generateEmergencyAlerts(location)
+    return []
+  }, [externalAlerts, viewType, isMedicalEmergency, location])
 
   // Generate ambulances for emergency view - update when location changes
   useEffect(() => {
@@ -188,15 +192,15 @@ export function MapView({ viewType = "female", isMedicalEmergency = false, onDea
   }, [location, viewType, isMedicalEmergency, isBrowser])
 
   // Generate alerts from female users (for male dashboard)
-  const generateAlerts = (center: { lat: number; lng: number }) => {
+  const generateAlerts = (center: MapLocation): MapAlert[] => {
     const degreesPerMeter = 0.00001
-    const alerts = []
+    const generatedAlerts: MapAlert[] = []
 
     // Generate exactly 2 alerts at fixed positions relative to the user
     // First alert - northeast of user (using red circle)
-    alerts.push({
+    generatedAlerts.push({
       id: "alert-1",
-      name: "Amrita",
+      name: "Divya",
       type: "emergency",
       markerType: "circle", // Use circle marker
       location: {
@@ -209,9 +213,9 @@ export function MapView({ viewType = "female", isMedicalEmergency = false, onDea
     })
 
     // Second alert - southeast of user (using pin marker)
-    alerts.push({
+    generatedAlerts.push({
       id: "alert-2",
-      name: "Ritika",
+      name: "Pooja",
       type: "suspect",
       markerType: "pin", // Use pin marker
       location: {
@@ -223,15 +227,15 @@ export function MapView({ viewType = "female", isMedicalEmergency = false, onDea
       status: "Active",
     })
 
-    return alerts
+    return generatedAlerts
   }
 
   // Generate emergency alerts
-  const generateEmergencyAlerts = (center: { lat: number; lng: number }) => {
-    const alerts = []
+  const generateEmergencyAlerts = (center: MapLocation): MapAlert[] => {
+    const generatedAlerts: MapAlert[] = []
 
     // Generate an emergency alert at the user's location
-    alerts.push({
+    generatedAlerts.push({
       id: "emergency-alert",
       name: "Your Emergency",
       type: "emergency",
@@ -245,11 +249,11 @@ export function MapView({ viewType = "female", isMedicalEmergency = false, onDea
       status: "Active",
     })
 
-    return alerts
+    return generatedAlerts
   }
 
   // Generate a single ambulance (for emergency view)
-  const generateAmbulance = (center: { lat: number; lng: number }) => {
+  const generateAmbulance = (center: MapLocation): ResponderUnit => {
     const degreesPerMeter = 0.00001
 
     // Position ambulance to the east of the user (300m away)
@@ -268,16 +272,16 @@ export function MapView({ viewType = "female", isMedicalEmergency = false, onDea
   }
 
   // Generate police units (for emergency view)
-  const generatePoliceUnits = (center: { lat: number; lng: number }) => {
+  const generatePoliceUnits = (center: MapLocation): ResponderUnit[] => {
     const degreesPerMeter = 0.00001
-    const policeUnits = []
+    const units: ResponderUnit[] = []
 
     // Add 1 police unit (200m southwest of user)
     const distance = 200 * degreesPerMeter
     const lat = center.lat - distance * 0.7
     const lng = center.lng - distance * 0.7
 
-    policeUnits.push({
+    units.push({
       id: "police-1",
       name: "Police Unit 1",
       type: "police",
@@ -286,20 +290,20 @@ export function MapView({ viewType = "female", isMedicalEmergency = false, onDea
       status: "On The Way",
     })
 
-    return policeUnits
+    return units
   }
 
   // Generate protectors (for emergency view)
-  const generateProtectors = (center: { lat: number; lng: number }) => {
+  const generateProtectors = (center: MapLocation): ResponderUnit[] => {
     const degreesPerMeter = 0.00001
-    const protectors = []
+    const units: ResponderUnit[] = []
 
     // Add 3 protectors with initials - all within 400m of user
     // First protector - northwest of user (250m)
-    protectors.push({
+    units.push({
       id: "protector-1",
-      name: "Rahul M.",
-      initials: "RM",
+      name: "Rohan G.",
+      initials: "RG",
       type: "protector",
       location: {
         lat: center.lat + 250 * degreesPerMeter,
@@ -310,10 +314,10 @@ export function MapView({ viewType = "female", isMedicalEmergency = false, onDea
     })
 
     // Second protector - southwest of user (300m)
-    protectors.push({
+    units.push({
       id: "protector-2",
-      name: "Amit K.",
-      initials: "AK",
+      name: "Arjun P.",
+      initials: "AP",
       type: "protector",
       location: {
         lat: center.lat - 300 * degreesPerMeter,
@@ -324,10 +328,10 @@ export function MapView({ viewType = "female", isMedicalEmergency = false, onDea
     })
 
     // Third protector - east of user (400m)
-    protectors.push({
+    units.push({
       id: "protector-3",
-      name: "Vikram S.",
-      initials: "VS",
+      name: "Karan S.",
+      initials: "KS",
       type: "protector",
       location: {
         lat: center.lat + 200 * degreesPerMeter,
@@ -337,7 +341,7 @@ export function MapView({ viewType = "female", isMedicalEmergency = false, onDea
       status: "On the way",
     })
 
-    return protectors
+    return units
   }
 
   return (
@@ -363,7 +367,7 @@ export function MapView({ viewType = "female", isMedicalEmergency = false, onDea
         <MapComponent
           location={location}
           viewType={viewType}
-          alerts={alerts}
+          alerts={renderedAlerts}
           ambulances={ambulances}
           policeUnits={policeUnits}
           protectors={protectors}

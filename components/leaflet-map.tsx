@@ -14,18 +14,15 @@ import {
   createProtectorMarker,
   createProtectorInitialsMarker,
 } from "./user-marker"
-import type { MapViewType } from "./map-view"
+import type { MapAlert, MapLocation, MapViewType, ResponderUnit } from "./map-types"
 
 interface LeafletMapProps {
-  location: {
-    lat: number
-    lng: number
-  }
+  location: MapLocation
   viewType: MapViewType
-  alerts?: any[]
-  ambulances?: any[]
-  policeUnits?: any[]
-  protectors?: any[]
+  alerts?: MapAlert[]
+  ambulances?: ResponderUnit[]
+  policeUnits?: ResponderUnit[]
+  protectors?: ResponderUnit[]
   isMedicalEmergency?: boolean
 }
 

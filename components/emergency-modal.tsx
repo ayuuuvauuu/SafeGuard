@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   Dialog,
   DialogContent,
@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { getEmergencyContacts, formatContactsSummary } from "@/lib/contacts"
 
 interface EmergencyModalProps {
   open: boolean
@@ -44,7 +45,18 @@ export function EmergencyModal({ open, onOpenChange }: EmergencyModalProps) {
   const [countdown, setCountdown] = useState(3) // Changed from 5 to 3
   const [selectedScenario, setSelectedScenario] = useState("general")
   const [customMessage, setCustomMessage] = useState("")
+  const [contactsSummary, setContactsSummary] = useState("your emergency contacts")
   const router = useRouter()
+
+  const loadContactsSummary = () => {
+    setContactsSummary(formatContactsSummary(getEmergencyContacts()))
+  }
+
+  useEffect(() => {
+    if (open) {
+      loadContactsSummary()
+    }
+  }, [open])
 
   const activateEmergency = () => {
     setIsActivated(true)
@@ -82,7 +94,9 @@ export function EmergencyModal({ open, onOpenChange }: EmergencyModalProps) {
             Emergency SOS
           </DialogTitle>
           <DialogDescription className="text-center text-gray-400">
-            {isActivated ? "SOS will be activated in:" : "This will alert your emergency contacts and start recording"}
+            {isActivated
+              ? "SOS will be activated in:"
+              : `This will alert ${contactsSummary} and open a camera preview`}
           </DialogDescription>
         </DialogHeader>
 
@@ -105,9 +119,9 @@ export function EmergencyModal({ open, onOpenChange }: EmergencyModalProps) {
                   <Camera className="h-6 w-6 text-red-500" />
                 </div>
                 <span className="text-xs text-center">
-                  Video
+                  Camera
                   <br />
-                  Recording
+                  Preview
                 </span>
               </div>
               <div className="flex flex-col items-center">
@@ -117,7 +131,7 @@ export function EmergencyModal({ open, onOpenChange }: EmergencyModalProps) {
                 <span className="text-xs text-center">
                   Audio
                   <br />
-                  Recording
+                  Stream
                 </span>
               </div>
             </div>
@@ -132,7 +146,7 @@ export function EmergencyModal({ open, onOpenChange }: EmergencyModalProps) {
               </li>
               <li className="flex items-start gap-2">
                 <AlertCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
-                <span>Start video and audio recording</span>
+                <span>Open the live camera feed</span>
               </li>
               <li className="flex items-start gap-2">
                 <AlertCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />

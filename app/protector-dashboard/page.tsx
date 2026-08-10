@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { Bell, Shield, UserIcon as Female, UserIcon as Male } from "lucide-react"
+import { Bell, UserIcon as Female, UserIcon as Male } from "lucide-react"
 import { Footer } from "@/components/footer"
+import { ShieldEmergencyButton } from "@/components/shield-emergency-button"
 import { useRouter } from "next/navigation"
 import dynamic from "next/dynamic"
+import type { MapAlert } from "@/components/map-types"
 
 // Dynamically import components
 const LiveMap = dynamic(() => import("@/components/live-map").then((mod) => mod.LiveMap), {
@@ -26,10 +28,10 @@ const DemoAlertModal = dynamic(() => import("@/components/demo-alert-modal").the
 })
 
 // Sample data for alerts - exactly 2 alerts as requested
-const activeAlerts = [
+const activeAlerts: MapAlert[] = [
   {
     id: "1",
-    name: "Mamata Banerjee",
+    name: "Anjali Verma",
     type: "emergency",
     distance: "1.2 km",
     time: "2 mins ago",
@@ -38,7 +40,7 @@ const activeAlerts = [
   },
   {
     id: "2",
-    name: "Mayawati",
+    name: "Sneha Patel",
     type: "suspect",
     distance: "0.8 km",
     time: "5 mins ago",
@@ -50,7 +52,7 @@ const activeAlerts = [
 const historyAlerts = [
   {
     id: "3",
-    name: "Mehbooba Mufti",
+    name: "Riya Sen",
     type: "emergency",
     distance: "1.5 km",
     time: "15 mins ago",
@@ -59,7 +61,7 @@ const historyAlerts = [
   },
   {
     id: "4",
-    name: "Uorfi Javed",
+    name: "Tanvi Kulkarni",
     type: "suspect",
     distance: "2.1 km",
     time: "30 mins ago",
@@ -68,7 +70,7 @@ const historyAlerts = [
   },
   {
     id: "5",
-    name: "Rakhi Sawant",
+    name: "Ishita Das",
     type: "emergency",
     distance: "1.8 km",
     time: "45 mins ago",
@@ -131,14 +133,7 @@ export default function ProtectorDashboard() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-2">
-                <Button
-                  variant="default"
-                  className="flex flex-col items-center gap-1 h-auto py-3 bg-blue-600 hover:bg-blue-700"
-                >
-                  <Shield className="h-5 w-5" />
-                  <span>Patrol Mode</span>
-                  <span className="text-xs text-blue-100">Active monitoring</span>
-                </Button>
+                <ShieldEmergencyButton />
                 <Button
                   variant="outline"
                   className="flex flex-col items-center gap-1 h-auto py-3 border-blue-500/50"

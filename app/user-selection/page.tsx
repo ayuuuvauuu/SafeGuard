@@ -1,30 +1,37 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card"
 import { useRouter } from "next/navigation"
-import { UserIcon as Female, UserIcon as Male } from "lucide-react"
+import { Shield, ShieldAlert } from "lucide-react"
 import { CreditDialog } from "@/components/credit-dialog"
 
 export default function UserSelection() {
   const router = useRouter()
   const [showCredits, setShowCredits] = useState(false)
   const [selectedType, setSelectedType] = useState<"female" | "male" | null>(null)
+  const [userRole, setUserRole] = useState<string>("Protected")
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setUserRole(localStorage.getItem("userRole") || "Protected")
+    }
+  }, [])
+
+  const canUseProtector = userRole === "Protector"
 
   const selectUserType = (type: "female" | "male") => {
-    // Store user type in localStorage for theming
+    if (type === "male" && !canUseProtector) return
     localStorage.setItem("userType", type)
     setSelectedType(type)
 
-    // Show credits first
     setShowCredits(true)
   }
 
-  // Common features for both user types
   const commonFeatures = {
-    female: ["Emergency SOS alerts", "Suspect reporting", "Location sharing", "Emergency contacts"],
-    male: ["Alert monitoring", "Emergency response", "Location tracking", "Quick actions"],
+    protected: ["Emergency SOS alerts", "Suspect reporting", "Location sharing", "Emergency contacts"],
+    protector: ["Alert monitoring", "Emergency response", "Location tracking", "Quick actions"],
   }
 
   return (
@@ -35,7 +42,6 @@ export default function UserSelection() {
           onOpenChange={(open) => {
             setShowCredits(open)
             if (!open && selectedType) {
-              // After credits are closed, redirect to the appropriate dashboard
               if (selectedType === "female") {
                 router.push("/dashboard")
               } else {
@@ -57,17 +63,15 @@ export default function UserSelection() {
             <Button variant="ghost" className="h-auto p-0 w-full" onClick={() => selectUserType("female")}>
               <CardContent className="p-0">
                 <div className="bg-pink-950/30 p-6 flex flex-col items-center">
-                  <Female className="h-12 w-12 text-pink-500 mb-2" />
-                  <CardTitle className="text-xl mb-1">Female User</CardTitle>
+                  <Shield className="h-12 w-12 text-pink-500 mb-2" />
+                  <CardTitle className="text-xl mb-1">I may need help (Protected)</CardTitle>
                   <CardDescription className="text-center">
-                    Access emergency features and protection tools
+                    Emergency features and protection tools
                   </CardDescription>
                 </div>
                 <div className="p-4 h-[152px]">
-                  {" "}
-                  {/* Fixed height to match both cards */}
                   <ul className="text-sm space-y-2">
-                    {commonFeatures.female.map((feature, index) => (
+                    {commonFeatures.protected.map((feature, index) => (
                       <li key={index} className="flex items-start gap-2">
                         <div className="h-2 w-2 rounded-full bg-pink-500 mt-1.5 flex-shrink-0"></div>
                         <span className="break-normal">{feature}</span>
@@ -80,24 +84,35 @@ export default function UserSelection() {
           </Card>
 
           <Card className="overflow-hidden border-blue-500/20">
-            <Button variant="ghost" className="h-auto p-0 w-full" onClick={() => selectUserType("male")}>
-              <CardContent className="p-0">
+            <Button
+              variant="ghost"
+              className="h-auto p-0 w-full disabled:opacity-50"
+              disabled={!canUseProtector}
+              onClick={() => selectUserType("male")}
+            >
+              <CardContent className="p-0 flex flex-col">
                 <div className="bg-blue-950/30 p-6 flex flex-col items-center">
-                  <Male className="h-12 w-12 text-blue-500 mb-2" />
-                  <CardTitle className="text-xl mb-1">Male User</CardTitle>
+                  <ShieldAlert className="h-12 w-12 text-blue-500 mb-2" />
+                  <CardTitle className="text-xl mb-1">I want to help (Protector)</CardTitle>
                   <CardDescription className="text-center">Monitor alerts and provide assistance</CardDescription>
                 </div>
                 <div className="p-4 h-[152px]">
-                  {" "}
-                  {/* Fixed height to match both cards */}
-                  <ul className="text-sm space-y-2">
-                    {commonFeatures.male.map((feature, index) => (
-                      <li key={index} className="flex items-start gap-2">
-                        <div className="h-2 w-2 rounded-full bg-blue-500 mt-1.5 flex-shrink-0"></div>
-                        <span className="break-normal">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  {canUseProtector ? (
+                    <ul className="text-sm space-y-2">
+                      {commonFeatures.protector.map((feature, index) => (
+                        <li key={index} className="flex items-start gap-2">
+                          <div className="h-2 w-2 rounded-full bg-blue-500 mt-1.5 flex-shrink-0"></div>
+                          <span className="break-normal">{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Your account role is &quot;Protected&quot;. A Protector role is needed for the alert-monitoring
+                      interface. To become a Protector, create a new account and choose the Protector role at
+                      registration.
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Button>

@@ -1,50 +1,39 @@
 "use client"
 
-import { useState, useEffect } from "react"
 import dynamic from "next/dynamic"
+import { MapAlert, MapLocation, MapViewType } from "./map-types"
 
 // Dynamically import MapView with SSR disabled
 const MapView = dynamic(() => import("./map-view").then((mod) => mod.MapView), { ssr: false })
 
 interface LiveMapProps {
-  location?: { lat: number; lng: number }
-  showProtectors?: boolean
-  showPolice?: boolean
-  showRoutes?: boolean
+  location?: MapLocation
   isProtector?: boolean
-  alerts?: any[]
+  alerts?: MapAlert[]
   isMedicalEmergency?: boolean
   onDeactivateMedical?: () => void
-  viewType?: "female" | "male" | "emergency"
+  viewType?: MapViewType
 }
 
 export function LiveMap({
   location,
-  showProtectors = false,
-  showPolice = false,
-  showRoutes = false,
   isProtector = false,
   alerts = [],
   isMedicalEmergency = false,
   onDeactivateMedical,
   viewType,
 }: LiveMapProps) {
-  const [mapType, setMapType] = useState<"female" | "male" | "emergency">("female")
-
-  useEffect(() => {
-    // Determine map type based on props
-    if (isProtector) {
-      setMapType("male")
-    } else if (showPolice || viewType === "emergency") {
-      setMapType("emergency")
-    } else {
-      setMapType("female")
-    }
-  }, [isProtector, showPolice, viewType])
+  const mapType: MapViewType = viewType ?? (isProtector ? "male" : "female")
 
   return (
     <div className="w-full h-full relative">
-      <MapView viewType={mapType} isMedicalEmergency={isMedicalEmergency} onDeactivateMedical={onDeactivateMedical} />
+      <MapView
+        location={location}
+        viewType={mapType}
+        alerts={alerts}
+        isMedicalEmergency={isMedicalEmergency}
+        onDeactivateMedical={onDeactivateMedical}
+      />
     </div>
   )
 }

@@ -1,47 +1,155 @@
-import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
-import { getFirestore } from "firebase/firestore"; // Added Firestore import just in case, can be removed if not used
+import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  updateProfile,
+  signOut,
+  onAuthStateChanged,
+  type User,
+} from "firebase/auth";
+import { getFirestore, doc, getDoc, setDoc, type Firestore } from "firebase/firestore";
 
-// Your web app's Firebase configuration (replace with your actual values)
+// Firebase configuration is injected from the environment at build time.
+// The committed source NEVER contains credentials. If the env vars are
+// missing, `firebaseConfigured` is false and auth calls fail loudly with a
+// clear message instead of silently using a fake key.
 const firebaseConfig = {
-  apiKey: "AIzaSyAgL2WF2v9Aaz00tqRSeI4FxBVYD3IV-pg", // Replace with your actual API key
-  authDomain: "women-safety-app-24af0.firebaseapp.com", // Replace with your actual auth domain
-  projectId: "women-safety-app-24af0", // Replace with your actual project ID
-  storageBucket: "women-safety-app-24af0.firebasestorage.app", // Replace with your actual storage bucket
-  messagingSenderId: "1060668038752", // Replace with your actual messaging sender ID
-  appId: "1:1060668038752:web:7215d85df2afb1b0ba6d05" // Replace with your actual app ID
-  // measurementId: "G-TKTK247XZ7" // Optional measurement ID
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? "",
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ?? "",
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "",
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ?? "",
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID ?? "",
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID ?? "",
 };
 
-// Initialize Firebase
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+export const firebaseConfigured = Boolean(
+  firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.appId
+);
 
-// Initialize Firebase services
-const auth = getAuth(app);
-const db = getFirestore(app); // Initialize Firestore, remove if not needed
-const provider = new GoogleAuthProvider(); // Create a GoogleAuthProvider instance
+let app: FirebaseApp | null = null;
+let auth: ReturnType<typeof getAuth> | null = null;
+let db: Firestore | null = null;
 
-// Define the signInWithGoogle function
-const signInWithGoogle = async () => {
+if (firebaseConfigured) {
   try {
-    const result = await signInWithPopup(auth, provider);
-    // You can access user info and token from the result object if needed
-    // const user = result.user;
-    // const credential = GoogleAuthProvider.credentialFromResult(result);
-    // const token = credential?.accessToken;
-    console.log("Google Sign-In successful:", result.user.displayName);
-    return result; // Return the result for potential further handling
-  } catch (error: any) {
-    console.error("Error during Google Sign-In:", error);
-    // Handle specific errors if needed
-    // const errorCode = error.code;
-    // const errorMessage = error.message;
-    // const email = error.customData?.email;
-    // const credential = GoogleAuthProvider.credentialFromError(error);
-    throw error; // Re-throw the error to be caught by the calling function
+    app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    db = getFirestore(app);
+  } catch (error) {
+    // Keep auth/db null; calls below will fail loudly with `requireFirebase`.
+    console.error("Failed to initialize Firebase:", error);
   }
+}
+
+function requireFirebase(): { auth: NonNullable<ReturnType<typeof getAuth>>; db: Firestore } {
+  if (!firebaseConfigured || !auth || !db) {
+    throw new Error(
+      "Firebase is not configured. Set NEXT_PUBLIC_FIREBASE_API_KEY, " +
+        "NEXT_PUBLIC_FIREBASE_PROJECT_ID and NEXT_PUBLIC_FIREBASE_APP_ID to enable sign-in."
+    );
+  }
+  return { auth, db };
+}
+
+export interface UserProfile {
+  name: string;
+  role: "Protected" | "Protector";
+  gender?: string;
+  createdAt?: string;
+}
+
+export async function storeUserInfo(user: User, profile?: Partial<UserProfile>): Promise<void> {
+  const { db } = requireFirebase();
+  const userRef = doc(db, "users", user.uid);
+  const snapshot = await getDoc(userRef);
+  const existing = snapshot.exists() ? (snapshot.data() as Partial<UserProfile>) : undefined;
+
+  // Only write a field when the caller explicitly provides it, or when the user has
+  // no stored value yet. This keeps a Google sign-in from clobbering a Protector role
+  // chosen at registration or resetting the original `createdAt`.
+  const data: Record<string, unknown> = {
+    email: user.email ?? "",
+  };
+  if (profile?.name) data.name = profile.name;
+  else if (!existing?.name) data.name = user.displayName ?? "SafeGuard User";
+  if (profile?.role) data.role = profile.role;
+  else if (!existing?.role) data.role = "Protected";
+  if (profile?.gender) data.gender = profile.gender;
+  else if (!existing?.gender) data.gender = "undeclared";
+  if (!existing?.createdAt) data.createdAt = new Date().toISOString();
+
+  await setDoc(userRef, data, { merge: true });
+}
+
+export async function getUserProfile(user: User): Promise<UserProfile | null> {
+  const { db } = requireFirebase();
+  const snapshot = await getDoc(doc(db, "users", user.uid));
+  if (!snapshot.exists()) return null;
+  return snapshot.data() as UserProfile;
+}
+
+export async function signUpWithEmail(
+  name: string,
+  email: string,
+  password: string,
+  gender: string,
+  role: UserProfile["role"]
+): Promise<User> {
+  const { auth } = requireFirebase();
+  const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+  const user = userCredential.user;
+  await updateProfile(user, { displayName: name });
+  await storeUserInfo(user, { name, role, gender });
+  return user;
+}
+
+export async function signInWithEmail(email: string, password: string): Promise<User> {
+  const { auth } = requireFirebase();
+  const userCredential = await signInWithEmailAndPassword(auth, email, password);
+  return userCredential.user;
+}
+
+const signInWithGoogle = async (): Promise<{ user: User }> => {
+  const { auth } = requireFirebase();
+  const provider = new GoogleAuthProvider();
+  const result = await signInWithPopup(auth, provider);
+  return result;
 };
 
-// Export the necessary modules
-const storeUserInfo = async (user: any) => { console.log("Placeholder storeUserInfo called with user:", user); };
-export { app, auth, db, provider, signInWithGoogle, storeUserInfo };
+export async function signOutUser(): Promise<void> {
+  if (firebaseConfigured && auth) {
+    await signOut(auth);
+  }
+}
+
+export function observeAuth(onChange: (user: User | null) => void): () => void {
+  if (!firebaseConfigured || !auth) {
+    onChange(null);
+    return () => {};
+  }
+  return onAuthStateChanged(auth, onChange);
+}
+
+export function mapFirebaseError(error: unknown, fallback: string): string {
+  const code = (error as { code?: string })?.code;
+  switch (code) {
+    case "auth/email-already-in-use":
+      return "An account with this email already exists.";
+    case "auth/invalid-email":
+      return "Please enter a valid email address.";
+    case "auth/weak-password":
+      return "Password must be at least 8 characters.";
+    case "auth/user-not-found":
+    case "auth/invalid-credential":
+      return "Incorrect email or password.";
+    case "auth/too-many-requests":
+      return "Too many attempts. Please try again later.";
+    default:
+      return (error as { message?: string })?.message || fallback;
+  }
+}
+
+export { app, auth, db, signOut, onAuthStateChanged, signInWithGoogle };
