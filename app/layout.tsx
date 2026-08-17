@@ -1,5 +1,5 @@
 import type React from "react"
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
@@ -13,21 +13,22 @@ export const metadata: Metadata = {
   title: "SafeGuard - Women Safety App",
   description: "Your personal safety companion with real-time location sharing and emergency alerts",
   manifest: "/manifest.json",
-  themeColor: "#7e22ce",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "SafeGuard",
-  },
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
   },
   applicationName: "SafeGuard",
   formatDetection: {
     telephone: true,
   },
   generator: "v0.dev",
+}
+
+export const viewport: Viewport = {
+  themeColor: "#7e22ce",
+  width: "device-width",
+  initialScale: 1,
 }
 
 export default function RootLayout({
