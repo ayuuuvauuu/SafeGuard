@@ -29,7 +29,7 @@ export function CreditDialog({ open, onOpenChange }: CreditDialogProps) {
           <h2 className="text-xl font-semibold">SafeGuard</h2>
           <p className="text-sm text-muted-foreground">Your personal safety companion</p>
           <p className="text-sm font-medium">Developed by</p>
-          <p className="text-base font-bold">Akshat Bhardwaj and Ayush Mishra</p>
+          <p className="text-base font-bold">Ayush Mishra</p>
         </div>
       </DialogContent>
     </Dialog>

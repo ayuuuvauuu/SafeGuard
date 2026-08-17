@@ -33,7 +33,13 @@ let app: FirebaseApp | null = null;
 let auth: ReturnType<typeof getAuth> | null = null;
 let db: Firestore | null = null;
 
-if (firebaseConfigured) {
+function ensureInitialized(): void {
+  // Firebase Auth/Firestore are browser-only in this app. Never initialize on
+  // the server: `getAuth(app)` throws "Component auth has not been registered
+  // yet" during Next.js prerendering/SSR, which breaks static generation.
+  if (!firebaseConfigured || app || typeof window === "undefined") {
+    return;
+  }
   try {
     app = getApps().length ? getApp() : initializeApp(firebaseConfig);
     auth = getAuth(app);
@@ -41,10 +47,12 @@ if (firebaseConfigured) {
   } catch (error) {
     // Keep auth/db null; calls below will fail loudly with `requireFirebase`.
     console.error("Failed to initialize Firebase:", error);
+    app = null;
   }
 }
 
 function requireFirebase(): { auth: NonNullable<ReturnType<typeof getAuth>>; db: Firestore } {
+  ensureInitialized();
   if (!firebaseConfigured || !auth || !db) {
     throw new Error(
       "Firebase is not configured. Set NEXT_PUBLIC_FIREBASE_API_KEY, " +
@@ -120,12 +128,14 @@ const signInWithGoogle = async (): Promise<{ user: User }> => {
 };
 
 export async function signOutUser(): Promise<void> {
+  ensureInitialized();
   if (firebaseConfigured && auth) {
     await signOut(auth);
   }
 }
 
 export function observeAuth(onChange: (user: User | null) => void): () => void {
+  ensureInitialized();
   if (!firebaseConfigured || !auth) {
     onChange(null);
     return () => {};

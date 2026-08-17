@@ -6,7 +6,7 @@ export function Footer() {
       <div className="container">
         <p className="font-medium">SafeGuard - Your personal safety companion</p>
         <p className="text-xs mt-1">
-          Developed by <span className="font-semibold">Akshat Bhardwaj and Ayush Mishra</span>
+          Developed by <span className="font-semibold">Ayush Mishra</span>
         </p>
         <div className="flex justify-center gap-4 mt-2 text-xs">
           <Link href="/privacy-policy" className="hover:underline">
